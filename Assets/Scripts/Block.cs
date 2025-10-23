@@ -39,7 +39,7 @@ public class Block : MonoBehaviour
         transform.DOKill();
 
         Sequence seq = DOTween.Sequence();
-        seq.Append(transform.DOLocalMoveZ(0.025f, 0.25f).SetEase(Ease.OutBack))
+        seq.Append(transform.DOLocalMoveZ(0.015f, 0.25f).SetEase(Ease.OutBack))
            .Join(DOVirtual.Float(0f, 1.5f, 0.3f, value =>
            {
                _matInstance.SetFloat("_OutlineWidth", value);

@@ -109,7 +109,7 @@ public class DragAndDropBlock3D : MonoBehaviour
 
         Vector3 direction = targetPos - currentPos;
         Vector3 desiredVelocity = direction * followSpeed;
-
+        desiredVelocity.z = 0f;
         if (desiredVelocity.magnitude > maxSpeed)
             desiredVelocity = desiredVelocity.normalized * maxSpeed;
 
