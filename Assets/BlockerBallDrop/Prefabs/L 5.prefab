@@ -287,7 +287,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1240720261621651155, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.9238795
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1240720261621651155, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
       propertyPath: m_LocalRotation.x
@@ -299,7 +299,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1240720261621651155, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0.38268346
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1240720261621651155, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -311,16 +311,44 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1240720261621651155, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 45
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1627548371110460388, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 7857590630482128698, guid: 65f283e88151e334194f8087ffcc4887, type: 3}
+    - target: {fileID: 3994067696718593513, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
+      propertyPath: _shape
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3994067696718593513, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
+      propertyPath: _occupiedCells.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3994067696718593513, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
+      propertyPath: _occupiedCells.Array.data[0].x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3994067696718593513, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
+      propertyPath: _occupiedCells.Array.data[1].x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3994067696718593513, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
+      propertyPath: _occupiedCells.Array.data[3].y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3994067696718593513, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
+      propertyPath: _occupiedCells.Array.data[4].y
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 4916002872465330424, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
       propertyPath: m_Name
       value: L 5
       objectReference: {fileID: 0}
+    - target: {fileID: 6045980677208501863, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 7857590630482128698, guid: 65f283e88151e334194f8087ffcc4887, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 4544466637873986764, guid: a939c767fe133c14fbaf5b6f8ea12388, type: 3}

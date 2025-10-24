@@ -1,18 +1,19 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Cell : MonoBehaviour
 {
-    [SerializeField] private GameObject _colid;
-    [SerializeField] private bool _isBlock;
-    public void ShowColid(bool enable)
+    [SerializeField] private GameObject _highlight;
+    private Vector2Int _index;
+    public Vector2Int Index => _index;
+    public void SetGridIndex(Vector2Int index)
     {
-        if (_isBlock)
-        {
-            _colid.SetActive(true);
-            return;
-        }
-        _colid.SetActive(enable);
+        _index = index;
     }
+
+    public void ShowHighlight(bool state)
+    {
+        if (_highlight != null)
+            _highlight.SetActive(state);
+    }
+
 }

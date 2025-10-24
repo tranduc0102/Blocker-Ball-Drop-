@@ -1,98 +1,194 @@
-using System;
-using DG.Tweening;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
 
+[RequireComponent(typeof(Rigidbody))]
 public class Block : MonoBehaviour
 {
+    [Header("Refs")]
     [SerializeField] private Rigidbody _rigidbody;
-    [SerializeField] private Direction _direction;
-    [SerializeField] private Rotation _rotation;
     [SerializeField] private MeshRenderer _meshRenderer;
 
+    [Header("Setup")]
+    [SerializeField] private Direction _direction;
+    [SerializeField] private Rotation _rotation;
+    [SerializeField] private BlockShape _shape;
+
     private Material _matInstance;
+    private bool _initialized;
+    [SerializeField] private Vector2Int[] _occupiedCells;
+
     public Direction Direction => _direction;
+    public Rotation Rotation
+    {
+        get =>  _rotation;
+        set => _rotation = value;
+    }
+    public BlockShape Shape
+    {
+        get => _shape;
+        set => _shape = value;
+    }
     public Rigidbody Rigidbody => _rigidbody;
+    public ColorBlock _Color;
+
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        _meshRenderer = GetComponent<MeshRenderer>();
+        _meshRenderer = GetComponentInChildren<MeshRenderer>();
         _rigidbody = GetComponent<Rigidbody>();
         ApplyRotation();
+        _occupiedCells = GetBaseCells(_shape);
     }
 #endif
 
     private void Awake()
     {
         _matInstance = _meshRenderer.material;
+        _occupiedCells = GetBaseCells(_shape);
+        _initialized = true;
     }
 
     public void Init(ColorBlock colorBlock, Direction direction)
     {
         _direction = direction;
-        // _matInstance.color = ConvertColor(colorBlock);
     }
 
     public void Selected()
     {
         _rigidbody.isKinematic = false;
-
         transform.DOKill();
 
-        Sequence seq = DOTween.Sequence();
-        seq.Append(transform.DOLocalMoveZ(0.015f, 0.25f).SetEase(Ease.OutBack))
-           .Join(DOVirtual.Float(0f, 1.5f, 0.3f, value =>
-           {
-               _matInstance.SetFloat("_OutlineWidth", value);
-           }).SetEase(Ease.OutSine));
+        DOTween.Sequence()
+            .Append(transform.DOLocalMoveZ(0.015f, 0.25f).SetEase(Ease.OutBack))
+            .Join(DOVirtual.Float(0f, 1.5f, 0.3f, v => _matInstance.SetFloat("_OutlineWidth", v)));
     }
 
     public void Deselected()
     {
         _rigidbody.isKinematic = true;
-
         transform.DOKill();
 
-        Sequence seq = DOTween.Sequence();
-        seq.Append(transform.DOLocalMoveZ(0f, 0.25f).SetEase(Ease.InOutSine))
-           .Join(DOVirtual.Float(_matInstance.GetFloat("_OutlineWidth"), 0f, 0.25f, value =>
-           {
-               _matInstance.SetFloat("_OutlineWidth", value);
-           }));
+
+        DOTween.Sequence()
+            .Append(transform.DOLocalMoveZ(0, 0.25f).SetEase(Ease.OutBack))
+            .Join(DOVirtual.Float(1.5f, 0f, 0.25f, v => _matInstance.SetFloat("_OutlineWidth", v)));
     }
-    private void ApplyRotation()
+
+    public void ApplyRotation()
     {
-        float angle = 0f;
-        switch (_rotation)
+        float angle = RotationAngle();
+        _meshRenderer.transform.localRotation = Quaternion.Euler(0f, 0f, angle);
+    }
+
+    private float RotationAngle()
+    {
+        return _rotation switch
         {
-            case Rotation.Angle45: angle = 45f; break;
-            case Rotation.Angle135: angle = 135f; break;
-            case Rotation.Angle225: angle = 225f; break;
-            case Rotation.Angle315: angle = 315f; break;
+            Rotation.Angle45 => 45f,
+            Rotation.Angle135 => 135f,
+            Rotation.Angle225 => 225f,
+            Rotation.Angle315 => 315f,
+            _ => 0f
+        };
+    }
+
+    private Vector2Int[] GetBaseCells(BlockShape shape)
+    {
+        switch (shape)
+        {
+            case BlockShape.Single: return new[] { new Vector2Int(0, 0) };
+
+            case BlockShape.Line2: return new[] { new Vector2Int(0, 0), new Vector2Int(1, 0) };
+            case BlockShape.Line3: return new[] { new Vector2Int(-1, 0), new Vector2Int(0, 0), new Vector2Int(1, 0) };
+
+            case BlockShape.L3: return new[] { new Vector2Int(0, 0), new Vector2Int(0, 1), new Vector2Int(1, 0) };
+            case BlockShape.L4: return new[] { new Vector2Int(1, 0), new Vector2Int(0, 0), new Vector2Int(-1, 0), new Vector2Int(-1, -1) };
+            case BlockShape.L5: return new[] { new Vector2Int(2, 0), new Vector2Int(1, 0), new Vector2Int(0, 0), new Vector2Int(0, -1), new Vector2Int(0, -2) };
+
+            case BlockShape.LReverse3: return new[] { new Vector2Int(0, 0), new Vector2Int(0, 1), new Vector2Int(-1, 0) };
+            case BlockShape.LReverse4: return new[] { new Vector2Int(1, 0), new Vector2Int(0, 0), new Vector2Int(-1, 0), new Vector2Int(-1, 1) };
+            case BlockShape.LReverse5: return new[] { new Vector2Int(2, 0), new Vector2Int(1, 0), new Vector2Int(0, 0), new Vector2Int(0, 1), new Vector2Int(0, 2) };
+
+            case BlockShape.T: return new[] { new Vector2Int(0, 0), new Vector2Int(-1, 0), new Vector2Int(0, 1), new Vector2Int(0, -1) };
+
+            case BlockShape.Z: return new[] { new Vector2Int(0, 1), new Vector2Int(0, 0), new Vector2Int(-1, 0), new Vector2Int(-1, -1) };
+            case BlockShape.ZReverse: return new[] { new Vector2Int(0, 1), new Vector2Int(0, 0), new Vector2Int(1, 0), new Vector2Int(1, -1) };
+
+            case BlockShape.U: return new[] { new Vector2Int(-1, 0), new Vector2Int(0, 0), new Vector2Int(1, 0), new Vector2Int(-1, 1), new Vector2Int(1, 1) };
+            case BlockShape.UReverse: return new[] { new Vector2Int(-1, 1), new Vector2Int(0, 1), new Vector2Int(1, 1), new Vector2Int(-1, 0), new Vector2Int(1, 0) };
+
+            case BlockShape.Square4: return new[] { new Vector2Int(0, 0), new Vector2Int(1, 0), new Vector2Int(0, 1), new Vector2Int(1, 1) };
+
+            default: return new[] { new Vector2Int(0, 0) };
+        }
+    }
+    public Vector2 GetLocalCentroid()
+    {
+        Vector2 sum = Vector2.zero;
+        var cells = GetRotatedCells();
+        foreach (var c in cells)
+        {
+            sum += new Vector2(c.x, c.y);
+        }
+        return sum / cells.Length;
+    }
+    public Vector2Int[] GetRotatedCells()
+    {
+        int logicAngle = _rotation switch
+        {
+            Rotation.Angle45 => 0,
+            Rotation.Angle135 => 90,
+            Rotation.Angle225 => 180,
+            Rotation.Angle315 => 270,
+            _ => 0
+        };
+
+        float rad = logicAngle * Mathf.Deg2Rad;
+        Vector2Int[] rotated = new Vector2Int[_occupiedCells.Length];
+
+        for (int i = 0; i < _occupiedCells.Length; i++)
+        {
+            var c = _occupiedCells[i];
+            int x = Mathf.RoundToInt(c.x * Mathf.Cos(rad) - c.y * Mathf.Sin(rad));
+            int y = Mathf.RoundToInt(c.x * Mathf.Sin(rad) + c.y * Mathf.Cos(rad));
+            rotated[i] = new Vector2Int(x, y);
         }
 
-        transform.localRotation = Quaternion.Euler(0f, 0f, angle);
+        return rotated;
     }
 
+
+    private void OnDrawGizmosSelected()
+    {
+        if (!_initialized) _occupiedCells = GetBaseCells(_shape);
+        Gizmos.color = Color.yellow;
+        foreach (var c in GetRotatedCells())
+        {
+            Gizmos.DrawWireCube(transform.position + new Vector3(c.x, c.y, 0), Vector3.one * 0.9f);
+        }
+    }
 }
 
 
 public enum Direction
 {
-  FullDirection,
-  Vertical,
-  Horizontal,
+    FullDirection,
+    Vertical,
+    Horizontal,
 }
 
 public enum ColorBlock
 {
-  Red,
-  DarkBlue,
-  Yellow,
-  Green,
-  Pink,
-  Purple,
-  Orange,
-  LightBlue
+    Red,
+    DarkBlue,
+    Yellow,
+    Green,
+    Pink,
+    Purple,
+    Orange,
+    LightBlue
 }
 public enum Rotation
 {
@@ -100,4 +196,22 @@ public enum Rotation
     Angle135,
     Angle225,
     Angle315
+}
+public enum BlockShape
+{
+    Single,             // 1 ô
+    Line2,              // 2 ô liền
+    Line3,              // 3 ô liền
+    L3,                 // L 3 ô
+    L4,                 // L 4 ô
+    L5,                 // L 5 ô
+    LReverse3,          // L ngược 3 ô
+    LReverse4,          // L ngược 4 ô
+    LReverse5,          // L ngược 5 ô
+    T,
+    Z,                  // Z
+    ZReverse,           // Z ngược
+    U,                  // U
+    UReverse,           // U ngược
+    Square4             // Vuông 2x2
 }

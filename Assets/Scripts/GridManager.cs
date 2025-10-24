@@ -1,91 +1,107 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-
-public enum GridPattern
-{
-    Normal,
-    Offset
-}
 
 public class GridManager : MonoBehaviour
 {
     [Header("Grid Settings")]
-    [SerializeField] private float _spacing = 0.1f;
+    [SerializeField] private float _cellSize = 0.1f;
     [SerializeField] private int _width = 7;
     [SerializeField] private int _height = 7;
-    [SerializeField] private Vector2 _posStartLeftBottom = new Vector2(-0.07f, 0.07f);
+    [SerializeField] private Vector2 _origin = new Vector2(-0.07f, 0.07f);
 
-    [Header("Pattern Settings")]
-    [SerializeField] private GridPattern _pattern = GridPattern.Offset;
-    [Range(0f, 1f)] [SerializeField] private float _offsetRatio = 0.5f;
-
-    [Header("Cell Prefabs (so le)")]
+    [Header("Cell Prefabs")]
     [SerializeField] private Cell _cellPrefabA;
     [SerializeField] private Cell _cellPrefabB;
 
-    [SerializeField] private List<Cell> _cells = new();
+    [Header("Visual Options")]
+    [SerializeField] private bool _showGrid = true;
+    [SerializeField] private bool _checkerPattern = true;
+
+    private readonly List<Cell> _cells = new();
+    public bool[,] occupied;
+
+    public float CellSize => _cellSize;
+    public Vector2 Origin => _origin;
+    public int Width => _width;
+    public int Height => _height;
+
+    // =================================================================
+    // ===================== GRID CREATION =============================
+    // =================================================================
 
     /*private void Awake()
     {
-        CreateCells();
-    }
+        GenerateGrid(_width, _height);
+    }*/
 
-    private void OnValidate()
+    /// <summary>
+    /// Tạo mới toàn bộ grid theo kích thước mới.
+    /// </summary>
+    public void GenerateGrid(int width, int height)
     {
-        if (!Application.isPlaying)
+        _width = width;
+        _height = height;
+
+        occupied = new bool[_width, _height];
+
+        ClearOldCells();
+        CenterGridToCamera();
+
+        if (_showGrid)
             CreateCells();
-    }
-
-    private void ClearChildren()
-    {
-        _cells.Clear();
-        for (int i = transform.childCount - 1; i >= 0; i--)
-        {
-            DestroyImmediate(transform.GetChild(i).gameObject);
-        }
     }
 
     private void CreateCells()
     {
-        if (_cellPrefabA == null || _cellPrefabB == null)
+        if (_cellPrefabA == null)
         {
-            Debug.LogWarning("⚠️ GridManager: Chưa gán đủ 2 prefab Cell (A và B)!");
+            Debug.LogError("❌ Thiếu Cell Prefab A!");
             return;
         }
 
-        ClearChildren();
-
         for (int y = 0; y < _height; y++)
         {
-            float xOffset = 0f;
-            if (_pattern == GridPattern.Offset && y % 2 == 1)
-            {
-                xOffset = _spacing * _offsetRatio;
-            }
-
             for (int x = 0; x < _width; x++)
             {
-                float xPos = _posStartLeftBottom.x - (x * _spacing) - xOffset;
-                float yPos = _posStartLeftBottom.y + (y * _spacing);
+                Vector2 pos = GetCellWorldPosition(x, y);
 
-                Vector3 cellPos = new Vector3(xPos, yPos, 0f);
+                Cell prefabToUse = _checkerPattern && _cellPrefabB != null && (x + y) % 2 == 1
+                    ? _cellPrefabB
+                    : _cellPrefabA;
 
-                bool useA = (x + y) % 2 == 0; // so le A–B–A–B
-                Cell prefabToUse = useA ? _cellPrefabA : _cellPrefabB;
-
-                Cell cell = Instantiate(prefabToUse, cellPos,prefabToUse.transform.rotation, transform);
-                cell.name = $"{(useA ? "A" : "B")}_Cell_{x}_{y}";
+                Cell cell = Instantiate(prefabToUse, pos, prefabToUse.transform.rotation, transform);
+                cell.name = $"Cell_{x}_{y}";
+                cell.gameObject.SetActive(true);
+                cell.SetGridIndex(new Vector2Int(x, y));
                 _cells.Add(cell);
             }
         }
-    }*/
+    }
 
-    public Vector2 GetNearestCellPosition(Vector2 worldPosition)
+    private void ClearOldCells()
     {
-        /*if (_cells == null || _cells.Count == 0)
-            CreateCells();*/
+        foreach (var c in _cells)
+        {
+            if (c != null) DestroyImmediate(c.gameObject);
+        }
+        _cells.Clear();
+    }
 
-        Vector2 nearest = _cells[0].transform.position;
+    // =================================================================
+    // ====================== GRID UTILITIES ===========================
+    // =================================================================
+
+    public Vector2 GetCellWorldPosition(int x, int y)
+    {
+        return _origin + new Vector2(x * _cellSize, y * _cellSize);
+    }
+
+    public Vector2Int GetNearestCellPosition(Vector2 worldPosition)
+    {
+        if (_cells.Count == 0)
+            return Vector2Int.zero;
+
+        Cell nearest = _cells[0];
         float minDist = float.MaxValue;
 
         foreach (var cell in _cells)
@@ -94,9 +110,74 @@ public class GridManager : MonoBehaviour
             if (dist < minDist)
             {
                 minDist = dist;
-                nearest = cell.transform.position;
+                nearest = cell;
             }
         }
-        return nearest;
+
+        return nearest.Index;
     }
+
+    public bool IsValidPosition(Vector2Int index)
+    {
+        return index.x >= 0 && index.x < _width && index.y >= 0 && index.y < _height;
+    }
+
+    public bool IsOccupied(Vector2Int index)
+    {
+        if (!IsValidPosition(index)) return true;
+        return occupied[index.x, index.y];
+    }
+
+    public void SetOccupied(Vector2Int index, bool state)
+    {
+        if (IsValidPosition(index))
+            occupied[index.x, index.y] = state;
+    }
+
+    public Cell GetCellAt(Vector2Int index)
+    {
+        if (!IsValidPosition(index)) return null;
+        return _cells.Find(c => c.Index == index);
+    }
+
+    // =================================================================
+    // ===================== CAMERA ALIGNMENT ==========================
+    // =================================================================
+
+    private void CenterGridToCamera()
+    {
+        Camera cam = Camera.main;
+        if (cam == null)
+        {
+            Debug.LogWarning("⚠️ Không tìm thấy Camera chính!");
+            return;
+        }
+
+        Vector3 camPos = cam.transform.position;
+
+        float gridWidth = _width * _cellSize;
+        float gridHeight = _height * _cellSize;
+
+        _origin = new Vector2(
+            camPos.x - gridWidth / 2 + _cellSize / 2,
+            camPos.y - gridHeight / 2 + _cellSize / 2
+        );
+    }
+
+#if UNITY_EDITOR
+    private void OnDrawGizmos()
+    {
+        if (!_showGrid) return;
+
+        Gizmos.color = Color.yellow;
+        for (int y = 0; y < _height; y++)
+        {
+            for (int x = 0; x < _width; x++)
+            {
+                Vector2 pos = GetCellWorldPosition(x, y);
+                Gizmos.DrawWireCube(pos, Vector3.one * _cellSize * 0.9f);
+            }
+        }
+    }
+#endif
 }
