@@ -1,4 +1,5 @@
-﻿using DG.Tweening;
+﻿using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 public class DragAndDropBlock3D : MonoBehaviour
@@ -20,12 +21,11 @@ public class DragAndDropBlock3D : MonoBehaviour
     public GridManager _grid;
 
     [Header("Ball Detection")]
-    [SerializeField] private LayerMask ballLayer; // Gán layer của ball vào đây
-    [SerializeField] private float cellHeightCheck = 0.1f; // Chiều cao box check (điều chỉnh nếu ball có kích thước khác)
-
-    private Vector2Int? oldBaseIndex; // Lưu baseIndex cũ để unset/set lại nếu cần
-    private Vector3 oldPosition; // Lưu position cũ để snap về nếu drop fail
-
+    [SerializeField] private LayerMask ballLayer;
+    [SerializeField] private float cellHeightCheck = 0.1f; 
+    
+    private Vector2 oldPosition;
+    
     private void Start()
     {
         mainCam = Camera.main;
@@ -58,65 +58,27 @@ public class DragAndDropBlock3D : MonoBehaviour
         }
     }
 
+    private List<Vector2Int> _register;
     private void StartDragging(Vector3 hitPoint)
     {
         if (blockInHand == null) return;
 
         isDragging = true;
-        blockInHand.Rigidbody.useGravity = false;
-
         zCoord = mainCam.WorldToScreenPoint(blockInHand.transform.position).z;
         Vector3 mousePoint = Input.mousePosition;
         mousePoint.z = zCoord;
 
         Vector3 worldMouse = mainCam.ScreenToWorldPoint(mousePoint);
         offset = blockInHand.transform.position - worldMouse;
-        blockInHand.Selected();
-
-        // Lưu position cũ
+        offset.z = 0f;
         oldPosition = blockInHand.transform.position;
-
-        // Tính oldBaseIndex và unset occupied nếu block đã được đặt
-        Vector2 worldPos = oldPosition;
-        float fx = (worldPos.x - _grid.Origin.x) / _grid.CellSize;
-        float fy = (worldPos.y - _grid.Origin.y) / _grid.CellSize;
-        Vector2 floatIndex = new Vector2(fx, fy);
-
-        Vector2 localCentroid = blockInHand.GetLocalCentroid();
-
-        Vector2 baseFloat = floatIndex - localCentroid;
-        Vector2Int potentialOldBase = new Vector2Int(
-            Mathf.RoundToInt(baseFloat.x),
-            Mathf.RoundToInt(baseFloat.y)
-        );
-
-        var localCells = blockInHand.GetRotatedCells();
-
-        // Kiểm tra xem tất cả cells cũ có occupied không (để xác định đã đặt hay chưa)
-        bool wasPlaced = true;
-        foreach (var c in localCells)
+        blockInHand.Selected();
+        _register = new List<Vector2Int>(blockInHand.OccupiedInGrid);
+        foreach (var index in blockInHand.OccupiedInGrid)
         {
-            Vector2Int cellPos = potentialOldBase + c;
-            if (!_grid.IsValidPosition(cellPos) || !_grid.IsOccupied(cellPos))
-            {
-                wasPlaced = false;
-                break;
-            }
+            _grid.SetOccupied(index, false);
         }
-
-        if (wasPlaced)
-        {
-            // Unset occupied cũ
-            foreach (var c in localCells)
-            {
-                _grid.SetOccupied(potentialOldBase + c, false);
-            }
-            oldBaseIndex = potentialOldBase;
-        }
-        else
-        {
-            oldBaseIndex = null; // Chưa được đặt trước đó
-        }
+        blockInHand.OccupiedInGrid.Clear();
     }
     private void StopDragging()
     {
@@ -125,74 +87,72 @@ public class DragAndDropBlock3D : MonoBehaviour
         isDragging = false;
         blockInHand.Deselected();
 
-        if (_grid != null)
+        if (_grid == null)
         {
-            Vector2 worldPos = blockInHand.transform.position;
-            float fx = (worldPos.x - _grid.Origin.x) / _grid.CellSize;
-            float fy = (worldPos.y - _grid.Origin.y) / _grid.CellSize;
-            Vector2 floatIndex = new Vector2(fx, fy);
+            blockInHand = null;
+            return;
+        }
 
-            Vector2 localCentroid = blockInHand.GetLocalCentroid();
+        Vector2Int baseIndex = _grid.GetNearestCellPosition(blockInHand.transform.position);
 
-            Vector2 baseFloat = floatIndex - localCentroid;
-            Vector2Int baseIndex = new Vector2Int(
-                Mathf.RoundToInt(baseFloat.x),
-                Mathf.RoundToInt(baseFloat.y)
-            );
+        var localCells = blockInHand.GetRotatedCells();
 
-            var localCells = blockInHand.GetRotatedCells();
+        bool canPlace = true;
 
-            bool canPlace = true;
-            foreach (var c in localCells)
+        foreach (var c in localCells)
+        {
+            Vector2Int cellPos = baseIndex + c;
+
+            if (!_grid.IsValidPosition(cellPos) ||
+                _grid.IsOccupied(cellPos) ||
+                HasBallOnCell(cellPos))
             {
-                Vector2Int cellPos = baseIndex + c;
-                if (!_grid.IsValidPosition(cellPos) || _grid.IsOccupied(cellPos) || HasBallOnCell(cellPos))
-                {
-                    canPlace = false;
-                    break;
-                }
-            }
-            if (canPlace)
-            {
-                foreach (var c in localCells)
-                    _grid.SetOccupied(baseIndex + c, true);
-
-                Vector2 sum = Vector2.zero;
-                int count = localCells.Length;
-                foreach (var c in localCells)
-                {
-                    Vector2 cellWorldPos = _grid.GetCellWorldPosition(baseIndex.x + c.x, baseIndex.y + c.y);
-                    sum += cellWorldPos;
-                }
-                Vector2 target = sum / count;
-
-                blockInHand.transform.DOMove(new Vector3(target.x, target.y, blockInHand.transform.position.z), 0.15f)
-                    .SetEase(Ease.OutQuad);
-            }
-            else
-            {
-                blockInHand.transform.DOMove(oldPosition, 0.15f)
-                    .SetEase(Ease.OutQuad);
-
-                if (oldBaseIndex.HasValue)
-                {
-                    foreach (var c in localCells)
-                    {
-                        _grid.SetOccupied(oldBaseIndex.Value + c, true);
-                    }
-                }
+                canPlace = false;
+                break;
             }
         }
+
+        if (canPlace)
+        {
+            foreach (var c in localCells)
+            {
+                _grid.SetOccupied(baseIndex + c, true);
+                blockInHand.OccupiedInGrid.Add(baseIndex + c);
+            }
+            Vector2 centroid = Vector2.zero;
+            foreach (var c in localCells)
+                centroid += _grid.GetCellWorldPosition(baseIndex.x + c.x, baseIndex.y + c.y);
+            centroid /= localCells.Length;
+
+            Vector2 localCentroid = blockInHand.GetLocalCentroid();
+            Vector2 pivotOffset = localCentroid * _grid.CellSize;
+
+            Vector3 target = new Vector3(
+                centroid.x - pivotOffset.x,
+                centroid.y - pivotOffset.y,
+                blockInHand.transform.position.z
+            );
+
+            blockInHand.transform.DOMove(target, 0.15f).SetEase(Ease.OutQuad);
+        }
+        else
+        {
+            foreach (var index in _register)
+                _grid.SetOccupied(index, true);
+            blockInHand.OccupiedInGrid = new List<Vector2Int>(_register);
+            blockInHand.transform.DOMove(oldPosition, 0.15f).SetEase(Ease.OutQuad);
+        }
+
         blockInHand = null;
-        oldBaseIndex = null; // Reset
     }
+
 
     private bool HasBallOnCell(Vector2Int cellIndex)
     {
         Vector2 cellWorld = _grid.GetCellWorldPosition(cellIndex.x, cellIndex.y);
         Vector3 center = new Vector3(cellWorld.x, cellWorld.y, blockInHand.transform.position.z); 
 
-        Vector3 halfExtents = new Vector3(_grid.CellSize / 2f, _grid.CellSize / 2f, cellHeightCheck / 2f);
+        Vector3 halfExtents = new Vector3(_grid.CellSize / 3f, _grid.CellSize / 3f, cellHeightCheck / 3f);
 
         Collider[] hits = Physics.OverlapBox(center, halfExtents, Quaternion.identity, ballLayer);
         return hits.Length > 0; 

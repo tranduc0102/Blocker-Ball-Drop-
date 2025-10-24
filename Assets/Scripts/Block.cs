@@ -15,10 +15,16 @@ public class Block : MonoBehaviour
     [SerializeField] private Rotation _rotation;
     [SerializeField] private BlockShape _shape;
 
-    private Material _matInstance;
     private bool _initialized;
     [SerializeField] private Vector2Int[] _occupiedCells;
+    [SerializeField] private Vector2[] _offsets;
+    private List<Vector2Int> _occupiedInGrid = new List<Vector2Int>();
 
+    public List<Vector2Int> OccupiedInGrid
+    {
+        get { return _occupiedInGrid; }
+        set { _occupiedInGrid = value; }
+    } 
     public Direction Direction => _direction;
     public Rotation Rotation
     {
@@ -40,19 +46,22 @@ public class Block : MonoBehaviour
         _rigidbody = GetComponent<Rigidbody>();
         ApplyRotation();
         _occupiedCells = GetBaseCells(_shape);
+        AlignVisual();
     }
 #endif
 
     private void Awake()
     {
-        _matInstance = _meshRenderer.material;
         _occupiedCells = GetBaseCells(_shape);
         _initialized = true;
     }
 
-    public void Init(ColorBlock colorBlock, Direction direction)
+    public void Init(ColorBlock colorBlock, Direction direction, Material mat)
     {
         _direction = direction;
+        this._Color = colorBlock;
+        _meshRenderer.material = mat;
+        AlignVisual();
     }
 
     public void Selected()
@@ -62,18 +71,20 @@ public class Block : MonoBehaviour
 
         DOTween.Sequence()
             .Append(transform.DOLocalMoveZ(0.015f, 0.25f).SetEase(Ease.OutBack))
-            .Join(DOVirtual.Float(0f, 1.5f, 0.3f, v => _matInstance.SetFloat("_OutlineWidth", v)));
+            .Join(DOVirtual.Float(0f, 1.5f, 0.3f, v => _meshRenderer.material.SetFloat("_OutlineWidth", v)));
     }
 
     public void Deselected()
     {
+        _rigidbody.velocity = Vector3.zero;
         _rigidbody.isKinematic = true;
+        
         transform.DOKill();
 
 
         DOTween.Sequence()
             .Append(transform.DOLocalMoveZ(0, 0.25f).SetEase(Ease.OutBack))
-            .Join(DOVirtual.Float(1.5f, 0f, 0.25f, v => _matInstance.SetFloat("_OutlineWidth", v)));
+            .Join(DOVirtual.Float(1.5f, 0f, 0.25f, v =>  _meshRenderer.material.SetFloat("_OutlineWidth", v)));
     }
 
     public void ApplyRotation()
@@ -159,6 +170,10 @@ public class Block : MonoBehaviour
         return rotated;
     }
 
+    private void AlignVisual()
+    {
+      _meshRenderer.transform.localPosition = _offsets[(int)_rotation];
+    }
 
     private void OnDrawGizmosSelected()
     {
@@ -166,7 +181,7 @@ public class Block : MonoBehaviour
         Gizmos.color = Color.yellow;
         foreach (var c in GetRotatedCells())
         {
-            Gizmos.DrawWireCube(transform.position + new Vector3(c.x, c.y, 0), Vector3.one * 0.9f);
+            Gizmos.DrawWireCube(transform.position + new Vector3(c.x * 0.1f, c.y * 0.1f, 0), Vector3.one * 0.1f);
         }
     }
 }
@@ -192,10 +207,10 @@ public enum ColorBlock
 }
 public enum Rotation
 {
-    Angle45,
-    Angle135,
-    Angle225,
-    Angle315
+    Angle45 = 0,
+    Angle135 = 1,
+    Angle225 = 2,
+    Angle315 = 3
 }
 public enum BlockShape
 {

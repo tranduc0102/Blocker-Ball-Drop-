@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 public class GridManager : MonoBehaviour
@@ -24,19 +25,6 @@ public class GridManager : MonoBehaviour
     public Vector2 Origin => _origin;
     public int Width => _width;
     public int Height => _height;
-
-    // =================================================================
-    // ===================== GRID CREATION =============================
-    // =================================================================
-
-    /*private void Awake()
-    {
-        GenerateGrid(_width, _height);
-    }*/
-
-    /// <summary>
-    /// Tạo mới toàn bộ grid theo kích thước mới.
-    /// </summary>
     public void GenerateGrid(int width, int height)
     {
         _width = width;
@@ -55,7 +43,6 @@ public class GridManager : MonoBehaviour
     {
         if (_cellPrefabA == null)
         {
-            Debug.LogError("❌ Thiếu Cell Prefab A!");
             return;
         }
 
@@ -78,18 +65,19 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    private void ClearOldCells()
+    public void ClearOldCells()
     {
-        foreach (var c in _cells)
+        for (int i = transform.childCount - 1; i >= 0; i--)
         {
-            if (c != null) DestroyImmediate(c.gameObject);
+            var child = transform.GetChild(i);
+            if (Application.isPlaying)
+                Destroy(child.gameObject);
+            else
+                DestroyImmediate(child.gameObject);
         }
         _cells.Clear();
     }
 
-    // =================================================================
-    // ====================== GRID UTILITIES ===========================
-    // =================================================================
 
     public Vector2 GetCellWorldPosition(int x, int y)
     {
@@ -116,7 +104,6 @@ public class GridManager : MonoBehaviour
 
         return nearest.Index;
     }
-
     public bool IsValidPosition(Vector2Int index)
     {
         return index.x >= 0 && index.x < _width && index.y >= 0 && index.y < _height;
@@ -127,29 +114,23 @@ public class GridManager : MonoBehaviour
         if (!IsValidPosition(index)) return true;
         return occupied[index.x, index.y];
     }
-
     public void SetOccupied(Vector2Int index, bool state)
     {
         if (IsValidPosition(index))
+        {
             occupied[index.x, index.y] = state;
+        }
     }
-
     public Cell GetCellAt(Vector2Int index)
     {
         if (!IsValidPosition(index)) return null;
         return _cells.Find(c => c.Index == index);
     }
-
-    // =================================================================
-    // ===================== CAMERA ALIGNMENT ==========================
-    // =================================================================
-
     private void CenterGridToCamera()
     {
         Camera cam = Camera.main;
         if (cam == null)
         {
-            Debug.LogWarning("⚠️ Không tìm thấy Camera chính!");
             return;
         }
 
@@ -169,15 +150,26 @@ public class GridManager : MonoBehaviour
     {
         if (!_showGrid) return;
 
-        Gizmos.color = Color.yellow;
+        if (occupied == null || occupied.GetLength(0) != _width || occupied.GetLength(1) != _height)
+            occupied = new bool[_width, _height];
+
         for (int y = 0; y < _height; y++)
         {
             for (int x = 0; x < _width; x++)
             {
                 Vector2 pos = GetCellWorldPosition(x, y);
+
+                Gizmos.color = occupied[x, y] ? Color.red : Color.yellow;
+
                 Gizmos.DrawWireCube(pos, Vector3.one * _cellSize * 0.9f);
+
+                if (occupied[x, y])
+                {
+                    Gizmos.DrawCube(pos, Vector3.one * _cellSize * 0.9f);
+                }
             }
         }
     }
+
 #endif
 }

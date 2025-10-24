@@ -9,221 +9,314 @@ public enum EditorMode
     Obstacle,
     BallSpawner,
     Block,
+    Wall,
+    Gate,
+    Bin,
     Delete
 }
 
 public class LevelEditorManager : MonoBehaviour
 {
-    [Header("⚙️ Level Settings")]
-    [SerializeField, Min(1)] public int levelWidth = 8;
-    [SerializeField, Min(1)] public int levelHeight = 8;
-    [SerializeField, Min(5f)] public float levelTime = 60f;
+    [Header("Level Settings")]
+    [Min(1)] public int levelWidth = 8;
+    [Min(1)] public int levelHeight = 8;
+    [Min(5f)] public float levelTime = 60f;
+    [Min(5f)] public int countSpawnBall = 6;
 
-    [Header("📦 References")]
+    [Header("References")]
     [SerializeField] private GridManager gridManager;
-    [SerializeField] private Camera mainCamera;
+    [SerializeField] public Camera _cam;
     [SerializeField] private List<Block> blockPrefabs;
     [SerializeField] private GameObject obstaclePrefab;
-    [SerializeField] private GameObject ballSpawnerPrefab;
+    [SerializeField] private BallSpawner ballSpawnerPrefab;
+    [SerializeField] private GameObject wallPrefab;
+    [SerializeField] private GameObject gatePrefab;
+    [SerializeField] private Bin binObjectPrefab;
+    [SerializeField] private Material[] _materialsColor;
+    [SerializeField] private List<BallSpawner> ballSpawners;
+    [Header("Current Editor State")]
+    public EditorMode mode = EditorMode.None;
+    public BlockShape currentShape = BlockShape.Single;
+    public ColorBlock currentColor = ColorBlock.Red;
+    public Rotation currentRotation = Rotation.Angle45;
 
-    [Header("🎨 Current Editor State")]
-    [SerializeField] public EditorMode mode = EditorMode.None;
-    [SerializeField] public BlockShape currentShape = BlockShape.Single;
-    [SerializeField] public ColorBlock currentColor = ColorBlock.Red;
-    [SerializeField] public Rotation currentRotation = Rotation.Angle45;
+    [Header("Current Editor State")] 
+    public Transform _parentBlocks;
+    public Transform _parentWalls;
+    public Transform _parentGates;
+    public Transform _parentObstacles;
+    public Transform _parentSpawnBall;
+    private Bin _binObject;
 
-    private Block previewBlock;
-    private Dictionary<Vector2Int, GameObject> obstacleDict = new();
-    private Dictionary<Vector2Int, GameObject> spawnerDict = new();
-    private HashSet<Vector2Int> hiddenCells = new();
+    private readonly Dictionary<Vector2Int, GameObject> obstacleDict = new();
+    private readonly Dictionary<Vector2Int, GameObject> spawnerDict = new();
+    private readonly List<Vector2Int> hiddenCells = new();
 
-    private string savePath = "Assets/Resources/Levels/";
+    private readonly List<GameObject> walls = new(); 
+    private readonly List<GameObject> gates = new();
 
-    // ================================================================
-    // ====================== UNITY LOOP ==============================
-    // ================================================================
+    private const string savePath = "Assets/Resources/Levels/";
 
     private void Update()
     {
-        if (mode == EditorMode.Block && previewBlock != null)
-        {
-            HandleBlockEditingInput();
-        }
-
         if (Input.GetMouseButtonDown(0))
-            HandleCellClick();
+            HandleClick();
     }
 
-    // ================================================================
-    // ======================= GRID SETUP =============================
-    // ================================================================
-
-    public void GenerateGrid()
+    private void HandleClick()
     {
-        if (gridManager == null)
+        Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
+        if (!Physics.Raycast(ray, out RaycastHit hit)) return;
+
+        Cell clickedCell = hit.collider.GetComponent<Cell>();
+        if (clickedCell != null && !clickedCell.gameObject.activeSelf)
+            return;
+
+        if (mode == EditorMode.Delete)
         {
-            Debug.LogError("❌ GridManager chưa được gán!");
+            var block = hit.collider.GetComponentInParent<Block>();
+            if (block != null)
+            {
+                DestroyImmediate(block.gameObject);
+                return;
+            }
+
+            if (walls.Remove(hit.collider.gameObject))
+            {
+                DestroyImmediate(hit.collider.gameObject);
+                return;
+            }
+
+            if (gates.Remove(hit.collider.gameObject))
+            {
+                DestroyImmediate(hit.collider.gameObject);
+                return;
+            }
+
+            Cell cell = hit.collider.GetComponent<Cell>();
+            if (cell != null)
+                ClearCell(cell.Index);
+
             return;
         }
 
-        gridManager.GenerateGrid(levelWidth, levelHeight);
-    }
-
-    // ================================================================
-    // ======================== INPUT LOGIC ===========================
-    // ================================================================
-
-    private void HandleCellClick()
-    {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit))
+        if (mode == EditorMode.Wall)
         {
-            Cell cell = hit.collider.GetComponent<Cell>();
-            if (cell == null) return;
-            Vector2Int index = cell.Index;
-
-            switch (mode)
-            {
-                case EditorMode.Obstacle:
-                    ToggleObstacle(index);
-                    break;
-                case EditorMode.BallSpawner:
-                    ToggleSpawner(index);
-                    break;
-                case EditorMode.Block:
-                    PlaceBlock(index);
-                    break;
-                case EditorMode.Delete:
-                    ToggleCellHidden(index);
-                    break;
-            }
-        }
-    }
-
-    private void HandleBlockEditingInput()
-    {
-        if (Input.GetKeyDown(KeyCode.R))
+            ToggleFreeObject(hit.point, walls, wallPrefab);
+            return;
+        } 
+        if (mode == EditorMode.Bin)
         {
-            currentRotation = (Rotation)(((int)currentRotation + 1) % 4);
-            previewBlock.Rotation = currentRotation;
-            previewBlock.ApplyRotation();
+            ToggleFreeObject(hit.point);
+            return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Alpha1)) currentShape = BlockShape.Line3;
-        if (Input.GetKeyDown(KeyCode.Alpha2)) currentShape = BlockShape.T;
-        if (Input.GetKeyDown(KeyCode.Alpha3)) currentShape = BlockShape.Square4;
-        if (Input.GetKeyDown(KeyCode.Alpha4)) currentShape = BlockShape.L3;
-
-        if (Input.GetKeyDown(KeyCode.C))
+        if (mode == EditorMode.Gate)
         {
-            currentColor = (ColorBlock)(((int)currentColor + 1) % System.Enum.GetValues(typeof(ColorBlock)).Length);
-            previewBlock._Color = currentColor;
+            ToggleFreeObject(hit.point, gates, gatePrefab);
+            return;
+        }
+
+        if (clickedCell == null) return;
+        Vector2Int index = clickedCell.Index;
+
+        if (hiddenCells.Contains(index)) return;
+
+        switch (mode)
+        {
+            case EditorMode.Obstacle:
+                ToggleObstacle(index);
+                break; 
+            case EditorMode.BallSpawner:
+                ToggleSpawner(index, countSpawnBall);
+                break;
+            case EditorMode.Block:
+                PlaceBlock(index);
+                break;
         }
     }
-
-    // ================================================================
-    // ======================= CELL TOGGLES ===========================
-    // ================================================================
-
     private void ToggleObstacle(Vector2Int index)
+    {
+        if (obstacleDict.TryGetValue(index, out GameObject obj))
+        {
+            DestroyImmediate(obj);
+            obstacleDict.Remove(index);
+        }
+        else
+        {
+            Vector2 pos = gridManager.GetCellWorldPosition(index.x, index.y);
+            var obstacle = Instantiate(obstaclePrefab, pos, Quaternion.identity, transform);
+            obstacle.transform.SetParent(_parentObstacles);
+            obstacleDict[index] = obstacle;
+        }
+    }
+
+    private int totalBall = 0;
+    private void ToggleSpawner(Vector2Int index, int count)
+    {
+        if (spawnerDict.TryGetValue(index, out GameObject obj))
+        {
+            DestroyImmediate(obj);
+            spawnerDict.Remove(index);
+        }
+        else
+        {
+            Vector2 pos = gridManager.GetCellWorldPosition(index.x, index.y);
+            var spawner = Instantiate(ballSpawnerPrefab, pos, Quaternion.identity, transform);
+            ballSpawners.Add(spawner);
+            spawner.transform.SetParent(_parentSpawnBall);
+            spawner.transform.localPosition = new Vector3(spawner.transform.position.x, spawner.transform.position.y, 0f);
+            spawner.SetCountSpawn(count);
+            totalBall += count;
+            spawnerDict[index] = spawner.gameObject;
+        }
+    }
+    private void ToggleFreeObject(Vector3 pos, List<GameObject> list, GameObject prefab)
+    {
+        var objNew = Instantiate(prefab, pos, Quaternion.identity, transform);
+        if (prefab == gatePrefab)
+        {
+            objNew.transform.SetParent(_parentGates);
+        }
+        else
+        {
+            objNew.transform.SetParent(_parentWalls);
+        }
+        list.Add(objNew);
+    }
+    private void ToggleFreeObject(Vector3 pos)
+    {
+        var objNew = Instantiate(binObjectPrefab, pos, Quaternion.identity, transform);
+        _binObject = objNew;
+    }
+    private void PlaceBlock(Vector2Int index)
+    {
+        var prefab = blockPrefabs.Find(b => b.Shape == currentShape);
+        if (prefab == null)
+        {
+            Debug.LogWarning($"⚠️ Không tìm thấy prefab cho shape {currentShape}");
+            return;
+        }
+
+        Vector2 pos = gridManager.GetCellWorldPosition(index.x, index.y);
+        var newBlock = Instantiate(prefab, pos, Quaternion.identity, transform);
+        newBlock.transform.SetParent(_parentBlocks);
+        newBlock.Rotation = currentRotation;
+        newBlock._Color = currentColor;
+        newBlock.ApplyRotation();
+
+        int colorIndex = (int)currentColor;
+        if (colorIndex >= 0 && colorIndex < _materialsColor.Length)
+            newBlock.Init(currentColor, Direction.FullDirection, _materialsColor[colorIndex]);
+    }
+
+    private void ClearCell(Vector2Int index)
     {
         if (obstacleDict.ContainsKey(index))
         {
             DestroyImmediate(obstacleDict[index]);
             obstacleDict.Remove(index);
         }
-        else
-        {
-            Vector2 pos = gridManager.GetCellWorldPosition(index.x, index.y);
-            var obj = Instantiate(obstaclePrefab, pos, Quaternion.identity, transform);
-            obstacleDict[index] = obj;
-        }
-    }
 
-    private void ToggleSpawner(Vector2Int index)
-    {
         if (spawnerDict.ContainsKey(index))
         {
             DestroyImmediate(spawnerDict[index]);
             spawnerDict.Remove(index);
         }
-        else
+
+        foreach (var block in GetComponentsInChildren<Block>())
         {
-            Vector2 pos = gridManager.GetCellWorldPosition(index.x, index.y);
-            var obj = Instantiate(ballSpawnerPrefab, pos, Quaternion.identity, transform);
-            spawnerDict[index] = obj;
-        }
-    }
-
-    private void ToggleCellHidden(Vector2Int index)
-    {
-        Cell cell = gridManager.GetCellAt(index);
-        if (cell == null) return;
-
-        bool hidden = hiddenCells.Contains(index);
-        cell.gameObject.SetActive(hidden);
-        if (hidden)
-            hiddenCells.Remove(index);
-        else
-            hiddenCells.Add(index);
-    }
-
-    // ================================================================
-    // ========================= BLOCK SPAWN ==========================
-    // ================================================================
-
-    private void PlaceBlock(Vector2Int index)
-    {
-        if (previewBlock == null)
-        {
-            var prefab = blockPrefabs.Find(b => b.Shape == currentShape);
-            if (prefab == null)
+            var localCells = block.GetRotatedCells();
+            Vector2Int nearest = gridManager.GetNearestCellPosition(block.transform.position);
+            foreach (var c in localCells)
             {
-                Debug.LogWarning("⚠️ Không tìm thấy prefab cho shape " + currentShape);
-                return;
+                if (nearest + c == index)
+                {
+                    DestroyImmediate(block.gameObject);
+                    break;
+                }
             }
+        }
 
-            Vector2 pos = gridManager.GetCellWorldPosition(index.x, index.y);
-            previewBlock = Instantiate(prefab, pos, Quaternion.identity, transform);
-            previewBlock.Shape = currentShape;
-            previewBlock.Rotation = currentRotation;
-            previewBlock._Color = currentColor;
-            previewBlock.ApplyRotation();
-        }
-        else
+        if (gridManager != null && gridManager.IsValidPosition(index))
+            gridManager.SetOccupied(index, false);
+
+        Cell cell = gridManager.GetCellAt(index);
+        if (cell != null && cell.gameObject.activeSelf)
         {
-            previewBlock.transform.position = gridManager.GetCellWorldPosition(index.x, index.y);
-            previewBlock = null;
+            cell.gameObject.SetActive(false);
+            hiddenCells.Add(cell.Index);
+            gridManager.SetOccupied(cell.Index, true);
         }
+
+        Debug.Log($"🧹 Cleared cell {index}");
+    }
+    public void ClearAll()
+    {
+        ClearObject(_parentWalls);
+        ClearObject(_parentBlocks);
+        ClearObject(_parentGates);
+        ClearObject(_parentObstacles);
+        ClearObject(_parentSpawnBall);
+        if (_binObject != null)
+        { 
+            Destroy(_binObject.gameObject);
+        }
+        gridManager.ClearOldCells();
+        obstacleDict.Clear();
+        spawnerDict.Clear();
+        hiddenCells.Clear();
+        walls.Clear();
+        gates.Clear();
+        Debug.Log("Level cleared");
     }
 
-    // ================================================================
-    // ========================== SAVE / LOAD =========================
-    // ================================================================
+    private void ClearObject(Transform t)
+    {
+        for (int i = t.childCount - 1; i >= 0; i--)
+        {
+            var child = t.GetChild(i); 
+            if (Application.isPlaying)
+                Destroy(child.gameObject);
+            else
+                DestroyImmediate(child.gameObject);
+        }
+    }
 
     public void SaveLevel(string fileName)
     {
+        totalBall = 0;
         LevelData data = new LevelData
         {
             width = levelWidth,
             height = levelHeight,
-            timeLimit = levelTime
+            timeLimit = levelTime,
+            sizeCam = _cam.orthographicSize
         };
 
-        // Save cells
-        foreach (var c in gridManager.GetComponentsInChildren<Cell>())
+        foreach (var c in gridManager.GetComponentsInChildren<Cell>(true))
         {
-            var d = new CellData
+            var cellData = new CellData
             {
                 index = c.Index,
                 isHidden = hiddenCells.Contains(c.Index),
                 isObstacle = obstacleDict.ContainsKey(c.Index),
-                isBallSpawner = spawnerDict.ContainsKey(c.Index)
+                isBallSpawner = spawnerDict.ContainsKey(c.Index),
+                spawnCount = countSpawnBall
             };
-            data.cells.Add(d);
+            data.cells.Add(cellData);
         }
 
-        // Save blocks
+        data.binObject = new ObjectPosData{position = _binObject.transform.position, rotation = _binObject.transform.rotation,  scale = _binObject.transform.localScale};
+
+        foreach (var w in walls)
+        {
+            if(w == null) continue;
+            data.walls.Add(new ObjectPosData { position = w.transform.position, rotation = w.transform.rotation, scale = w.transform.localScale});
+        }
+
+        foreach (var g in gates)
+            data.gates.Add(new ObjectPosData { position = g.transform.position,  rotation = g.transform.rotation, scale = g.transform.localScale });
         foreach (var b in GetComponentsInChildren<Block>())
         {
             Vector2Int nearest = gridManager.GetNearestCellPosition(b.transform.position);
@@ -239,15 +332,20 @@ public class LevelEditorManager : MonoBehaviour
         Directory.CreateDirectory(savePath);
         string json = JsonUtility.ToJson(data, true);
         File.WriteAllText(savePath + fileName + ".json", json);
-        Debug.Log("💾 Level saved: " + fileName);
+        Debug.Log($"💾 Level saved: {fileName}");
     }
 
+    public List<BallSpawner> GetBallSpawners()
+    {
+        return ballSpawners;
+    }
     public void LoadLevel(string fileName)
     {
+        totalBall = 0;
         string path = savePath + fileName + ".json";
         if (!File.Exists(path))
         {
-            Debug.LogWarning("⚠️ File not found: " + path);
+            Debug.LogWarning($"⚠️ File not found: {path}");
             return;
         }
 
@@ -259,43 +357,109 @@ public class LevelEditorManager : MonoBehaviour
         levelWidth = data.width;
         levelHeight = data.height;
         levelTime = data.timeLimit;
+
         GenerateGrid();
+
+        if (_cam != null && data.sizeCam > 0)
+            _cam.orthographicSize = data.sizeCam;
 
         foreach (var c in data.cells)
         {
-            if (c.isHidden) ToggleCellHidden(c.index);
-            if (c.isObstacle) ToggleObstacle(c.index);
-            if (c.isBallSpawner) ToggleSpawner(c.index);
+            if (c.isHidden)
+            {
+                Cell cell = gridManager.GetCellAt(c.index);
+                if (cell != null)
+                {
+                    cell.gameObject.SetActive(false);
+                    hiddenCells.Add(c.index);
+                }
+                if (gridManager != null && gridManager.IsValidPosition(c.index))
+                    gridManager.SetOccupied(c.index, false);
+            }
+            if (c.isObstacle)
+                ToggleObstacle(c.index);
+
+            if (c.isBallSpawner)
+                ToggleSpawner(c.index, c.spawnCount);
         }
 
+
+        foreach (var w in data.walls)
+        {
+            var obj = Instantiate(wallPrefab, w.position, w.rotation, transform);
+            obj.transform.localScale = w.scale;
+            obj.transform.SetParent(_parentWalls);
+            walls.Add(obj);
+        }
+
+        foreach (var g in data.gates)
+        {
+            var obj = Instantiate(gatePrefab, g.position, g.rotation, transform);
+            obj.transform.localScale = g.scale;
+            obj.transform.SetParent(_parentGates);
+            gates.Add(obj);
+        }
+        var objBin = Instantiate(binObjectPrefab, data.binObject.position, data.binObject.rotation, transform);
+        objBin.transform.localScale = data.binObject.scale;
+        _binObject = objBin;
+        _binObject.SetTotal(totalBall);
         foreach (var b in data.blocks)
         {
             var prefab = blockPrefabs.Find(p => p.Shape == b.shape);
             if (prefab == null) continue;
 
-            Vector2 pos = gridManager.GetCellWorldPosition(b.baseIndex.x, b.baseIndex.y);
-            var newBlock = Instantiate(prefab, pos, Quaternion.identity, transform);
-            newBlock.Shape = b.shape;
-            newBlock._Color = b.color;
+            var newBlock = Instantiate(prefab, Vector3.zero, Quaternion.identity, transform);
+            newBlock.transform.SetParent(_parentBlocks);
             newBlock.Rotation = b.rotation;
+            newBlock._Color = b.color;
             newBlock.ApplyRotation();
+
+            int colorIndex = (int)b.color;
+            if (colorIndex >= 0 && colorIndex < _materialsColor.Length)
+                newBlock.Init(b.color, Direction.FullDirection, _materialsColor[colorIndex]);
+
+            var localCells = newBlock.GetRotatedCells();
+            Vector2 centroid = Vector2.zero;
+
+            foreach (var c in localCells)
+                centroid += gridManager.GetCellWorldPosition(b.baseIndex.x + c.x, b.baseIndex.y + c.y);
+
+            centroid /= localCells.Length;
+
+            Vector2 localCentroid = newBlock.GetLocalCentroid();
+            Vector2 pivotOffset = localCentroid * gridManager.CellSize;
+
+            Vector3 targetPos = new Vector3(
+                centroid.x - pivotOffset.x,
+                centroid.y - pivotOffset.y,
+                0f
+            );
+
+            newBlock.transform.position = targetPos;
+
         }
 
-        Debug.Log("📂 Level loaded: " + fileName);
+        Debug.Log($"📂 Level loaded: {fileName}");
     }
 
-    // ================================================================
-    // ========================= CLEAR ================================
-    // ================================================================
-
-    public void ClearAll()
+    public void ClearItem()
     {
-        foreach (Transform child in transform)
-            DestroyImmediate(child.gameObject);
-
+        ClearObject(_parentBlocks);
+        ClearObject(_parentObstacles);
+        ClearObject(_parentSpawnBall);
+        gridManager.ClearOldCells();
         obstacleDict.Clear();
         spawnerDict.Clear();
-        hiddenCells.Clear();
-        previewBlock = null;
+    }
+    public void GenerateGrid()
+    {
+        if (gridManager == null)
+        {
+            Debug.LogError("❌ GridManager chưa được gán!");
+            return;
+        }
+
+        gridManager.GenerateGrid(levelWidth, levelHeight);
+        Debug.Log($"🧱 Generated grid {levelWidth}x{levelHeight}");
     }
 }

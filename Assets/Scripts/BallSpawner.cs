@@ -13,17 +13,22 @@ public class BallSpawner : Singleton<BallSpawner>
     [Header("Collision Settings")]
     public LayerMask obstacleMask;       
     public float clearRadius = 0.5f;
-
-    public void SpawnBalls(int count)
+    [SerializeField] private int _count;
+    public void SetCountSpawn(int count)
+    {
+        _count = count;
+    }
+    public void SpawnBalls()
     {
         Vector3 origin = transform.position;
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < _count; i++)
         {
             Vector3 randomPos = origin + UnityEngine.Random.insideUnitSphere * spawnRadius;
             Vector3 safePos = FindNearestClearPosition(randomPos);
             if (safePos != Vector3.zero)
             {
-                Instantiate(ballPrefab, safePos, Quaternion.identity);
+                var obj = Instantiate(ballPrefab, transform.position, Quaternion.identity, transform);
+                obj.SetActive(true);
             }
             else
             {
