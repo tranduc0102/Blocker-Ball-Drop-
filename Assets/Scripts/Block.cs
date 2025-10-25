@@ -55,6 +55,10 @@ public class Block : MonoBehaviour
         _occupiedCells = GetBaseCells(_shape);
         _initialized = true;
     }
+    private void OnDestroy()
+    {
+        DOTween.Kill(this);
+    }
 
     public void Init(ColorBlock colorBlock, Direction direction, Material mat)
     {
@@ -185,7 +189,6 @@ public class Block : MonoBehaviour
         }
     }
 }
-
 
 public enum Direction
 {

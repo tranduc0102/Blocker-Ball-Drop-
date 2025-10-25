@@ -155,7 +155,7 @@ public class LevelEditorUI : MonoBehaviour
     private void OnSaveClicked()
     {
         TextAsset[] textAssets = Resources.LoadAll<TextAsset>("Levels/");
-        string fileName = "Level " +textAssets.Length;
+        string fileName = "Level " + levelInput.text;
         if (string.IsNullOrEmpty(fileName))
         {
           Debug.LogError("⚠️ Thiếu tên file, Vui lòng nhập tên file để lưu level!");

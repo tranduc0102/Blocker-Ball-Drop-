@@ -13,7 +13,7 @@ GameObject:
   m_Layer: 0
   m_Name: BallSpawn
   m_TagString: Untagged
-  m_Icon: {fileID: 5132851093641282708, guid: 0000000000000000d000000000000000, type: 0}
+  m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -45,11 +45,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ballPrefab: {fileID: 2652596603438604907, guid: 5f787118de46570409a4a3869b8ccf86, type: 3}
-  spawnRadius: 5
-  maxAttempts: 10
-  checkStep: 1
-  obstacleMask:
-    serializedVersion: 2
-    m_Bits: 192
-  clearRadius: 0.5
   _count: 0
+  spawnRadius: 0.05
+  spawnDelay: 0.05
+  appearDuration: 0.2
+  explosionForce: 2
+  upwardForce: 1

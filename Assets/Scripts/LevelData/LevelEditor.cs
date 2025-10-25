@@ -180,6 +180,7 @@ public class LevelEditorManager : MonoBehaviour
         }
         else
         {
+            objNew.transform.localPosition = new Vector3(objNew.transform.localPosition.x, objNew.transform.localPosition.y, 0.05f);
             objNew.transform.SetParent(_parentWalls);
         }
         list.Add(objNew);
@@ -291,7 +292,7 @@ public class LevelEditorManager : MonoBehaviour
             width = levelWidth,
             height = levelHeight,
             timeLimit = levelTime,
-            sizeCam = _cam.orthographicSize
+            sizeCam = _cam.fieldOfView
         };
 
         foreach (var c in gridManager.GetComponentsInChildren<Cell>(true))
@@ -306,8 +307,7 @@ public class LevelEditorManager : MonoBehaviour
             };
             data.cells.Add(cellData);
         }
-
-        data.binObject = new ObjectPosData{position = _binObject.transform.position, rotation = _binObject.transform.rotation,  scale = _binObject.transform.localScale};
+        if(_binObject != null) data.binObject = new ObjectPosData{position = _binObject.transform.position, rotation = _binObject.transform.rotation,  scale = _binObject.transform.localScale};
 
         foreach (var w in walls)
         {
@@ -342,6 +342,7 @@ public class LevelEditorManager : MonoBehaviour
     public void LoadLevel(string fileName)
     {
         totalBall = 0;
+        ballSpawners = new List<BallSpawner>();
         string path = savePath + fileName + ".json";
         if (!File.Exists(path))
         {
@@ -361,7 +362,13 @@ public class LevelEditorManager : MonoBehaviour
         GenerateGrid();
 
         if (_cam != null && data.sizeCam > 0)
-            _cam.orthographicSize = data.sizeCam;
+        {
+            float targetAspect = 10.8f / 19.2f;
+            float currentAspect = (float)Screen.width / Screen.height;
+
+            float verticalFOV = data.sizeCam * (targetAspect / currentAspect);
+            _cam.fieldOfView = verticalFOV;
+        }
 
         foreach (var c in data.cells)
         {
@@ -374,7 +381,7 @@ public class LevelEditorManager : MonoBehaviour
                     hiddenCells.Add(c.index);
                 }
                 if (gridManager != null && gridManager.IsValidPosition(c.index))
-                    gridManager.SetOccupied(c.index, false);
+                    gridManager.SetOccupied(c.index, true);
             }
             if (c.isObstacle)
                 ToggleObstacle(c.index);
@@ -389,6 +396,7 @@ public class LevelEditorManager : MonoBehaviour
             var obj = Instantiate(wallPrefab, w.position, w.rotation, transform);
             obj.transform.localScale = w.scale;
             obj.transform.SetParent(_parentWalls);
+            obj.transform.localPosition = new Vector3(obj.transform.localPosition.x, obj.transform.localPosition.y, 0.05f);
             walls.Add(obj);
         }
 
@@ -458,7 +466,7 @@ public class LevelEditorManager : MonoBehaviour
             Debug.LogError("❌ GridManager chưa được gán!");
             return;
         }
-
+        hiddenCells.Clear();
         gridManager.GenerateGrid(levelWidth, levelHeight);
         Debug.Log($"🧱 Generated grid {levelWidth}x{levelHeight}");
     }
