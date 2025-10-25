@@ -6,7 +6,7 @@ TagManager:
   tags:
   - Ball
   - Block
-  - FxTemporaire
+  - Gate
   layers:
   - Default
   - TransparentFX
