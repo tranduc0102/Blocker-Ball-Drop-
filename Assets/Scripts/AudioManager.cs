@@ -30,6 +30,8 @@ public class AudioManager : MonoBehaviour
 
         sfxSource = gameObject.AddComponent<AudioSource>();
         sfxSource.playOnAwake = false;
+        bgmSource.volume = PlayerPrefs.GetFloat("VolumnSound", 1);
+        sfxSource.volume = PlayerPrefs.GetFloat("VolumnSound", 1);
     }
 
     private void Start()
@@ -66,5 +68,12 @@ public class AudioManager : MonoBehaviour
     {
         if (clip != null)
             sfxSource.PlayOneShot(clip);
+    }
+
+    public void SetValue(float value)
+    {
+        PlayerPrefs.SetFloat("VolumnSound",value);
+        bgmSource.volume = value;
+        sfxSource.volume = value;
     }
 }

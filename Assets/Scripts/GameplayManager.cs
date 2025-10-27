@@ -23,13 +23,7 @@ public class GameplayManager : MonoBehaviour
     [Header("Timer Setting")]
     [SerializeField] private float maxTime = 60f;
     private float currentTime;
-
-    [Header("UI Setting")]
-    [SerializeField] private TextMeshProUGUI _textTime;
-    [SerializeField] private TextMeshProUGUI _textLevel;
-    [SerializeField] private CanvasGroup _win;
-    [SerializeField] private CanvasGroup _lose;
-
+    
     private void Awake()
     {
         if (Instance == null)
@@ -56,11 +50,8 @@ public class GameplayManager : MonoBehaviour
             {
                 currentTime = 0;
                 Lose();
-            }
-
-            int minutes = Mathf.FloorToInt(currentTime / 60);
-            int seconds = Mathf.FloorToInt(currentTime % 60);
-            _textTime.text = $"{minutes:0}:{seconds:00}";
+            } 
+            UIController.Instance.UpdateTime(currentTime);
         }
     }
 
@@ -73,19 +64,10 @@ public class GameplayManager : MonoBehaviour
     {
         SetState(GameState.Waiting);
         _LevelEditor.ClearAll();
-        _win.gameObject.SetActive(false);
-        _lose.gameObject.SetActive(false);
-        _win.alpha = 0;
-        _lose.alpha = 0;
-      
-
-        _textLevel.text = "Level " + displayLevel;
         _LevelEditor.LoadLevel("Level " + currentLevel);
         maxTime = _LevelEditor.levelTime;
         currentTime = maxTime;
-        int minutes = Mathf.FloorToInt(currentTime / 60);
-        int seconds = Mathf.FloorToInt(currentTime % 60);
-        _textTime.text = $"{minutes:0}:{seconds:00}";
+        UIController.Instance.UpdateViewLevel(displayLevel, currentTime);
 
         foreach (var obj in _LevelEditor.GetBallSpawners())
             obj.SpawnBalls();
@@ -96,9 +78,8 @@ public class GameplayManager : MonoBehaviour
         if (State != GameState.Playing) return;
         SetState(GameState.Win);
 
-        AudioManager.Instance.PlayWin();
-        _win.gameObject.SetActive(true);
-        _win.DOFade(1, 0.5f).SetEase(Ease.OutQuad);
+        AudioManager.Instance.PlayWin(); 
+        UIController.Instance.ShowResult(true, true);
 
         displayLevel++;
 
@@ -117,8 +98,8 @@ public class GameplayManager : MonoBehaviour
         SetState(GameState.Lose);
 
         AudioManager.Instance.PlayLose();
-        _lose.gameObject.SetActive(true);
-        _lose.DOFade(1, 0.5f).SetEase(Ease.OutQuad);
+        UIController.Instance.ShowResult(false, true);
+
     }
 
     public void ReplayLevel()

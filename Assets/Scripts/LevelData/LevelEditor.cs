@@ -22,6 +22,7 @@ public class LevelEditorManager : MonoBehaviour
     [Min(1)] public int levelHeight = 8;
     [Min(5f)] public float levelTime = 60f;
     [Min(5f)] public int countSpawnBall = 6;
+    [Min(5f)] public float camsize = 6;
 
     [Header("References")]
     [SerializeField] private GridManager gridManager;
@@ -47,6 +48,7 @@ public class LevelEditorManager : MonoBehaviour
     public Transform _parentObstacles;
     public Transform _parentSpawnBall;
     private Bin _binObject;
+    public GridManager Grid => gridManager;
 
     private readonly Dictionary<Vector2Int, GameObject> obstacleDict = new();
     private readonly Dictionary<Vector2Int, GameObject> spawnerDict = new();
@@ -57,11 +59,11 @@ public class LevelEditorManager : MonoBehaviour
 
     private const string savePath = "Assets/Resources/Levels/";
 
-    private void Update()
+    /*private void Update()
     {
         if (Input.GetMouseButtonDown(0))
             HandleClick();
-    }
+    }*/
 
     private void HandleClick()
     {
@@ -97,8 +99,32 @@ public class LevelEditorManager : MonoBehaviour
             if (cell != null)
                 ClearCell(cell.Index);
 
+            GameObject obstacleRoot = hit.collider.transform.parent.transform.parent.gameObject;
+
+            if (obstacleDict.ContainsValue(obstacleRoot))
+            {
+                Vector2Int keyToRemove = Vector2Int.zero;
+                foreach (var kvp in obstacleDict)
+                {
+                    if (kvp.Value == obstacleRoot)
+                    {
+                        keyToRemove = kvp.Key;
+                        break;
+                    }
+                }
+
+                if (obstacleDict.ContainsKey(keyToRemove))
+                {
+                    DestroyImmediate(obstacleDict[keyToRemove]);
+                    obstacleDict.Remove(keyToRemove);
+                    return;
+                }
+            }
+
+
             return;
         }
+
 
         if (mode == EditorMode.Wall)
         {
@@ -151,7 +177,7 @@ public class LevelEditorManager : MonoBehaviour
         }
     }
 
-    private int totalBall = 0;
+    private int _totalBall = 0;
     private void ToggleSpawner(Vector2Int index, int count)
     {
         if (spawnerDict.TryGetValue(index, out GameObject obj))
@@ -167,7 +193,7 @@ public class LevelEditorManager : MonoBehaviour
             spawner.transform.SetParent(_parentSpawnBall);
             spawner.transform.localPosition = new Vector3(spawner.transform.position.x, spawner.transform.position.y, 0f);
             spawner.SetCountSpawn(count);
-            totalBall += count;
+            _totalBall += count;
             spawnerDict[index] = spawner.gameObject;
         }
     }
@@ -286,7 +312,7 @@ public class LevelEditorManager : MonoBehaviour
 
     public void SaveLevel(string fileName)
     {
-        totalBall = 0;
+        _totalBall = 0;
         LevelData data = new LevelData
         {
             width = levelWidth,
@@ -341,7 +367,7 @@ public class LevelEditorManager : MonoBehaviour
     }
     public void LoadLevel(string fileName)
     {
-        totalBall = 0;
+        _totalBall = 0;
         ballSpawners = new List<BallSpawner>();
         string path = savePath + fileName + ".json";
         if (!File.Exists(path))
@@ -360,7 +386,6 @@ public class LevelEditorManager : MonoBehaviour
         levelTime = data.timeLimit;
 
         GenerateGrid();
-
         if (_cam != null && data.sizeCam > 0)
         {
             float targetAspect = 10.8f / 19.2f;
@@ -368,6 +393,7 @@ public class LevelEditorManager : MonoBehaviour
 
             float verticalFOV = data.sizeCam * (targetAspect / currentAspect);
             _cam.fieldOfView = verticalFOV;
+            camsize = verticalFOV;
         }
 
         foreach (var c in data.cells)
@@ -410,7 +436,7 @@ public class LevelEditorManager : MonoBehaviour
         var objBin = Instantiate(binObjectPrefab, data.binObject.position, data.binObject.rotation, transform);
         objBin.transform.localScale = data.binObject.scale;
         _binObject = objBin;
-        _binObject.SetTotal(totalBall);
+        _binObject.SetTotal(_totalBall);
         foreach (var b in data.blocks)
         {
             var prefab = blockPrefabs.Find(p => p.Shape == b.shape);

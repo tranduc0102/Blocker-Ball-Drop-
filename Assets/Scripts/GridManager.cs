@@ -145,6 +145,7 @@ public class GridManager : MonoBehaviour
         );
     }
 
+/*
 #if UNITY_EDITOR
     private void OnDrawGizmos()
     {
@@ -171,5 +172,5 @@ public class GridManager : MonoBehaviour
         }
     }
 
-#endif
+#endif*/
 }
