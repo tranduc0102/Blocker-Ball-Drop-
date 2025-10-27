@@ -1,6 +1,6 @@
 {
-    "width": 4,
-    "height": 4,
+    "width": 6,
+    "height": 6,
     "timeLimit": 300.0,
     "sizeCam": 40.0,
     "cells": [
@@ -9,7 +9,7 @@
                 "x": 0,
                 "y": 0
             },
-            "isHidden": false,
+            "isHidden": true,
             "isObstacle": false,
             "isBallSpawner": false,
             "spawnCount": 6
@@ -19,7 +19,7 @@
                 "x": 1,
                 "y": 0
             },
-            "isHidden": false,
+            "isHidden": true,
             "isObstacle": false,
             "isBallSpawner": false,
             "spawnCount": 6
@@ -30,7 +30,7 @@
                 "y": 0
             },
             "isHidden": false,
-            "isObstacle": false,
+            "isObstacle": true,
             "isBallSpawner": false,
             "spawnCount": 6
         },
@@ -40,7 +40,27 @@
                 "y": 0
             },
             "isHidden": false,
-            "isObstacle": false,
+            "isObstacle": true,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 4,
+                "y": 0
+            },
+            "isHidden": false,
+            "isObstacle": true,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 5,
+                "y": 0
+            },
+            "isHidden": false,
+            "isObstacle": true,
             "isBallSpawner": false,
             "spawnCount": 6
         },
@@ -49,7 +69,7 @@
                 "x": 0,
                 "y": 1
             },
-            "isHidden": false,
+            "isHidden": true,
             "isObstacle": false,
             "isBallSpawner": false,
             "spawnCount": 6
@@ -86,11 +106,31 @@
         },
         {
             "index": {
+                "x": 4,
+                "y": 1
+            },
+            "isHidden": false,
+            "isObstacle": false,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 5,
+                "y": 1
+            },
+            "isHidden": false,
+            "isObstacle": true,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
                 "x": 0,
                 "y": 2
             },
             "isHidden": false,
-            "isObstacle": false,
+            "isObstacle": true,
             "isBallSpawner": false,
             "spawnCount": 6
         },
@@ -108,6 +148,76 @@
             "index": {
                 "x": 2,
                 "y": 2
+            },
+            "isHidden": false,
+            "isObstacle": false,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 3,
+                "y": 2
+            },
+            "isHidden": false,
+            "isObstacle": false,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 4,
+                "y": 2
+            },
+            "isHidden": false,
+            "isObstacle": false,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 5,
+                "y": 2
+            },
+            "isHidden": false,
+            "isObstacle": true,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 0,
+                "y": 3
+            },
+            "isHidden": false,
+            "isObstacle": true,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 1,
+                "y": 3
+            },
+            "isHidden": false,
+            "isObstacle": false,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 2,
+                "y": 3
+            },
+            "isHidden": false,
+            "isObstacle": false,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 3,
+                "y": 3
             },
             "isHidden": false,
             "isObstacle": false,
@@ -116,28 +226,38 @@
         },
         {
             "index": {
-                "x": 3,
-                "y": 2
+                "x": 4,
+                "y": 3
             },
             "isHidden": false,
             "isObstacle": false,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 5,
+                "y": 3
+            },
+            "isHidden": false,
+            "isObstacle": true,
             "isBallSpawner": false,
             "spawnCount": 6
         },
         {
             "index": {
                 "x": 0,
-                "y": 3
+                "y": 4
             },
             "isHidden": false,
-            "isObstacle": false,
+            "isObstacle": true,
             "isBallSpawner": false,
             "spawnCount": 6
         },
         {
             "index": {
                 "x": 1,
-                "y": 3
+                "y": 4
             },
             "isHidden": false,
             "isObstacle": false,
@@ -147,7 +267,7 @@
         {
             "index": {
                 "x": 2,
-                "y": 3
+                "y": 4
             },
             "isHidden": false,
             "isObstacle": false,
@@ -157,10 +277,90 @@
         {
             "index": {
                 "x": 3,
-                "y": 3
+                "y": 4
             },
             "isHidden": false,
             "isObstacle": false,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 4,
+                "y": 4
+            },
+            "isHidden": false,
+            "isObstacle": false,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 5,
+                "y": 4
+            },
+            "isHidden": false,
+            "isObstacle": true,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 0,
+                "y": 5
+            },
+            "isHidden": false,
+            "isObstacle": true,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 1,
+                "y": 5
+            },
+            "isHidden": false,
+            "isObstacle": true,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 2,
+                "y": 5
+            },
+            "isHidden": false,
+            "isObstacle": true,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 3,
+                "y": 5
+            },
+            "isHidden": false,
+            "isObstacle": true,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 4,
+                "y": 5
+            },
+            "isHidden": false,
+            "isObstacle": true,
+            "isBallSpawner": false,
+            "spawnCount": 6
+        },
+        {
+            "index": {
+                "x": 5,
+                "y": 5
+            },
+            "isHidden": false,
+            "isObstacle": true,
             "isBallSpawner": false,
             "spawnCount": 6
         }
@@ -168,8 +368,8 @@
     "blocks": [
         {
             "baseIndex": {
-                "x": 2,
-                "y": 1
+                "x": 3,
+                "y": 2
             },
             "shape": 1,
             "color": 0,
@@ -177,142 +377,69 @@
         },
         {
             "baseIndex": {
-                "x": 1,
-                "y": 2
+                "x": 2,
+                "y": 3
             },
             "shape": 2,
             "color": 1,
             "rotation": 1
         }
     ],
-    "walls": [
-        {
-            "position": {
-                "x": 0.061400000005960467,
-                "y": -0.4480000138282776,
-                "z": 0.05000000074505806
-            },
-            "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.7071068286895752,
-                "w": 0.7071068286895752
-            },
-            "scale": {
-                "x": 0.10000003129243851,
-                "y": 0.4773043692111969,
-                "z": 0.10000000149011612
-            }
-        },
-        {
-            "position": {
-                "x": 0.043299999088048938,
-                "y": 0.04800000041723251,
-                "z": 0.04399999976158142
-            },
-            "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.7071068286895752,
-                "w": 0.7071068286895752
-            },
-            "scale": {
-                "x": 0.10000003129243851,
-                "y": 0.5088517665863037,
-                "z": 0.10000000149011612
-            }
-        },
-        {
-            "position": {
-                "x": -0.24699999392032624,
-                "y": -0.13040000200271607,
-                "z": 0.05000000074505806
-            },
-            "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-            },
-            "scale": {
-                "x": 0.10000000894069672,
-                "y": 0.45747607946395876,
-                "z": 0.10000000149011612
-            }
-        },
-        {
-            "position": {
-                "x": 0.24799999594688416,
-                "y": -0.17299999296665193,
-                "z": 0.05000000074505806
-            },
-            "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-            },
-            "scale": {
-                "x": 0.10000000894069672,
-                "y": 0.5163387060165405,
-                "z": 0.10000000149011612
-            }
-        }
-    ],
+    "walls": [],
     "gates": [
         {
             "position": {
-                "x": -0.19419999420642854,
-                "y": -0.40299999713897707,
-                "z": -0.04830000177025795
+                "x": -0.15299999713897706,
+                "y": -0.4020000100135803,
+                "z": 0.005000002216547728
             },
             "rotation": {
-                "x": 0.5,
-                "y": -0.5,
-                "z": -0.5,
-                "w": 0.5
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
             },
             "scale": {
                 "x": 1.0,
-                "y": 7.0,
+                "y": 1.0,
                 "z": 1.0
             }
         },
         {
             "position": {
-                "x": -0.2076999992132187,
-                "y": -0.3752000033855438,
-                "z": 0.0010000000474974514
+                "x": -0.20200000703334809,
+                "y": -0.35199999809265139,
+                "z": 0.004999999888241291
             },
             "rotation": {
                 "x": 0.0,
-                "y": -0.7071068286895752,
+                "y": 0.0,
                 "z": -0.7071068286895752,
-                "w": 0.0
+                "w": 0.7071068286895752
             },
             "scale": {
                 "x": 1.0,
-                "y": 7.0,
+                "y": 1.0,
                 "z": 1.0
             }
         }
     ],
     "binObject": {
         "position": {
-            "x": -0.4772999882698059,
-            "y": -0.6836000084877014,
-            "z": 0.14069999754428864
+            "x": -0.5200026631355286,
+            "y": -0.7340000867843628,
+            "z": 0.09900218993425369
         },
         "rotation": {
-            "x": 0.0,
-            "y": 0.0,
-            "z": -0.3826834261417389,
-            "w": 0.9238795638084412
+            "x": 2.123415470123291e-7,
+            "y": -6.966292858123779e-7,
+            "z": 7.310882210731506e-7,
+            "w": 1.0
         },
         "scale": {
-            "x": 2.5,
-            "y": 2.5,
-            "z": 2.5
+            "x": 3.5,
+            "y": 3.5,
+            "z": 3.5
         }
     }
 }
