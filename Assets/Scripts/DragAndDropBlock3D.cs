@@ -39,6 +39,11 @@ public class DragAndDropBlock3D : MonoBehaviour
             if (blockInHand != null)
             {
                 blockInHand.Rigidbody.velocity = Vector2.zero;
+
+                foreach (var index in _register)
+                    _grid.SetOccupied(index, true);
+                _register.Clear();
+                blockInHand = null;
             }
             return;
         }
@@ -47,7 +52,7 @@ public class DragAndDropBlock3D : MonoBehaviour
             TrySelectBlock();
 
         if (Input.GetMouseButton(0) && isDragging && blockInHand != null)
-            Drag();
+            Drag1();
 
         if (Input.GetMouseButtonUp(0) && isDragging)
             StopDragging();
@@ -91,6 +96,7 @@ public class DragAndDropBlock3D : MonoBehaviour
             _grid.SetOccupied(index, false);
         }
         blockInHand.OccupiedInGrid.Clear();
+        _settedOffset = false;
     }
     private void StopDragging()
     {
@@ -175,6 +181,22 @@ public class DragAndDropBlock3D : MonoBehaviour
 
         Collider[] hits = Physics.OverlapBox(center, halfExtents, Quaternion.identity, ballLayer);
         return hits.Length > 0;
+    }
+    private bool _settedOffset;
+    private Vector3 _offset;
+    private void Drag1()
+    {
+        if (blockInHand == null) return;
+
+        Vector3 mousePoint = Input.mousePosition;
+        mousePoint.z = zCoord;
+        Vector3 targetPos = mainCam.ScreenToWorldPoint(mousePoint) + offset;
+        targetPos.z = 0;
+
+        Vector3 currentPos = blockInHand.Rigidbody.position;
+        Vector3 smoothedPos = Vector3.Lerp(currentPos, targetPos, Time.deltaTime * followSpeed);
+
+        blockInHand.Rigidbody.MovePosition(smoothedPos);
     }
 
     private void Drag()
