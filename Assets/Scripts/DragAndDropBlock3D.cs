@@ -52,7 +52,7 @@ public class DragAndDropBlock3D : MonoBehaviour
             TrySelectBlock();
 
         if (Input.GetMouseButton(0) && isDragging && blockInHand != null)
-            Drag1();
+            Drag();
 
         if (Input.GetMouseButtonUp(0) && isDragging)
             StopDragging();
@@ -96,7 +96,6 @@ public class DragAndDropBlock3D : MonoBehaviour
             _grid.SetOccupied(index, false);
         }
         blockInHand.OccupiedInGrid.Clear();
-        _settedOffset = false;
     }
     private void StopDragging()
     {
@@ -160,12 +159,77 @@ public class DragAndDropBlock3D : MonoBehaviour
         }
         else
         {
-            foreach (var index in _register)
-                _grid.SetOccupied(index, true);
+            Vector2Int nearestValidCell = baseIndex;
+            float nearestDist = float.MaxValue;
+            bool foundValid = false;
 
-            blockInHand.OccupiedInGrid = new List<Vector2Int>(_register);
-            blockInHand.transform.DOMove(oldPosition, 0.15f).SetEase(Ease.OutQuad);
+            int searchRadius = 3;
+            for (int dx = -searchRadius; dx <= searchRadius; dx++)
+            {
+                for (int dy = -searchRadius; dy <= searchRadius; dy++)
+                {
+                    Vector2Int testCell = baseIndex + new Vector2Int(dx, dy);
+
+                    bool canPlaceHere = true;
+                    foreach (var c in blockInHand.GetRotatedCells())
+                    {
+                        Vector2Int cellPos = testCell + c;
+                        if (!_grid.IsValidPosition(cellPos) || _grid.IsOccupied(cellPos) || HasBallOnCell(cellPos))
+                        {
+                            canPlaceHere = false;
+                            break;
+                        }
+                    }
+
+                    if (canPlaceHere)
+                    {
+                        Vector3 worldPos = _grid.GetCellWorldPosition(testCell.x, testCell.y);
+                        float dist = Vector3.Distance(blockInHand.transform.position, worldPos);
+                        if (dist < nearestDist)
+                        {
+                            nearestDist = dist;
+                            nearestValidCell = testCell;
+                            foundValid = true;
+                        }
+                    }
+                }
+            }
+
+            if (foundValid)
+            {
+                foreach (var c in blockInHand.GetRotatedCells())
+                {
+                    Vector2Int pos = nearestValidCell + c;
+                    _grid.SetOccupied(pos, true);
+                    blockInHand.OccupiedInGrid.Add(pos);
+                }
+
+                Vector2 centroid = Vector2.zero;
+                foreach (var c in blockInHand.GetRotatedCells())
+                    centroid += _grid.GetCellWorldPosition(nearestValidCell.x + c.x, nearestValidCell.y + c.y);
+                centroid /= blockInHand.GetRotatedCells().Length;
+
+                Vector2 localCentroid = blockInHand.GetLocalCentroid();
+                Vector2 pivotOffset = localCentroid * _grid.CellSize;
+
+                Vector3 target = new Vector3(
+                    centroid.x - pivotOffset.x,
+                    centroid.y - pivotOffset.y,
+                    blockInHand.transform.position.z
+                );
+
+                blockInHand.transform.DOMove(target, 0.2f).SetEase(Ease.OutBack);
+            }
+            else
+            {
+                foreach (var index in _register)
+                    _grid.SetOccupied(index, true);
+
+                blockInHand.OccupiedInGrid = new List<Vector2Int>(_register);
+                blockInHand.transform.DOMove(oldPosition, 0.15f).SetEase(Ease.OutQuad);
+            }
         }
+
 
         blockInHand = null;
     }
@@ -182,23 +246,6 @@ public class DragAndDropBlock3D : MonoBehaviour
         Collider[] hits = Physics.OverlapBox(center, halfExtents, Quaternion.identity, ballLayer);
         return hits.Length > 0;
     }
-    private bool _settedOffset;
-    private Vector3 _offset;
-    private void Drag1()
-    {
-        if (blockInHand == null) return;
-
-        Vector3 mousePoint = Input.mousePosition;
-        mousePoint.z = zCoord;
-        Vector3 targetPos = mainCam.ScreenToWorldPoint(mousePoint) + offset;
-        targetPos.z = 0;
-
-        Vector3 currentPos = blockInHand.Rigidbody.position;
-        Vector3 smoothedPos = Vector3.Lerp(currentPos, targetPos, Time.deltaTime * followSpeed);
-
-        blockInHand.Rigidbody.MovePosition(smoothedPos);
-    }
-
     private void Drag()
     {
         if (blockInHand == null) return;
@@ -210,8 +257,11 @@ public class DragAndDropBlock3D : MonoBehaviour
         targetPos.z = currentPos.z;
 
         Vector3 moveDir = targetPos - currentPos;
-        if (moveDir.sqrMagnitude < 0.0001f)
+        if (moveDir.sqrMagnitude < 0.001f)
+        {
+            blockInHand.Rigidbody.velocity = Vector3.zero;
             return;
+        }
 
         Vector2Int gridDir = Vector2Int.zero;
         Vector3 finalTarget = targetPos;
@@ -253,11 +303,7 @@ public class DragAndDropBlock3D : MonoBehaviour
         if (desiredVelocity.magnitude > maxSpeed)
             desiredVelocity = desiredVelocity.normalized * maxSpeed;
 
-        blockInHand.Rigidbody.velocity = Vector3.Lerp(
-            blockInHand.Rigidbody.velocity,
-            desiredVelocity,
-            Time.deltaTime * smoothSpeed
-        );
+        blockInHand.Rigidbody.velocity = desiredVelocity;
     }
     private bool IsPointerOverUIElement()
     {

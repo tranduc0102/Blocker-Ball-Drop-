@@ -32,7 +32,7 @@ public class BallCollide : MonoBehaviour
         }
 
         _src.playOnAwake = false;
-        _src.volume = PlayerPrefs.GetFloat("VolumeSound", 1);
+        _src.volume = PlayerPrefs.GetFloat("VolumnSound", 1);
         _src.spatialBlend = 1f;
         _src.rolloffMode = AudioRolloffMode.Logarithmic;
         _src.maxDistance = 10f;
@@ -52,7 +52,7 @@ public class BallCollide : MonoBehaviour
         float volume = 1f;
         if (scaleVolume)
         {
-            volume = Mathf.Min(Mathf.Clamp01(relativeSpeed / 5f), PlayerPrefs.GetFloat("VolumeSound", 1));
+            volume = Mathf.Min(Mathf.Clamp01(relativeSpeed / 5f), PlayerPrefs.GetFloat("VolumnSound", 1f));
         }
         _src.transform.position = col.contacts[0].point;
         _src.PlayOneShot(impactClip, volume);

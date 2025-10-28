@@ -106,34 +106,19 @@ public class UIController : MonoBehaviour
 
     public void ShowPopup(CanvasGroup canvas, bool show, Action onFinish = null)
     {
-        float duration = 0.35f;
 
         canvas.DOKill();
         if (show)
         {
             canvas.gameObject.SetActive(true);
-            canvas.blocksRaycasts = true;
-            canvas.interactable = true;
-
-            canvas.alpha = 0;
-            canvas.transform.localScale = Vector3.one * 0.8f;
-
-            canvas.DOFade(1f, duration).SetEase(Ease.OutQuad).SetUpdate(true);
-            canvas.transform.DOScale(1f, duration).SetUpdate(true).SetEase(Ease.OutBack)
-                .OnComplete(() => onFinish?.Invoke());
+            canvas.alpha =1.0f;
+            onFinish?.Invoke();
         }
         else
         {
-            canvas.blocksRaycasts = false;
-            canvas.interactable = false;
 
-            canvas.DOFade(0f, duration).SetEase(Ease.InQuad);
-            canvas.transform.DOScale(0.8f, duration).SetEase(Ease.InBack)
-                .OnComplete(() =>
-                {
-                    canvas.gameObject.SetActive(false);
-                    onFinish?.Invoke();
-                });
+            onFinish?.Invoke();
+            canvas.gameObject.SetActive(false);
         }
     }
 }

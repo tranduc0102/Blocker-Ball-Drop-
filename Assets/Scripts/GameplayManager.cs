@@ -17,7 +17,7 @@ public class GameplayManager : MonoBehaviour
 
     private const int MinLevel = 0;
     private const int MaxLevel = 19;
-    private const int LoopStart = 10;
+    private const int LoopStart = 9;
     private const int LoopEnd = 19;
 
     [Header("Timer Setting")]
@@ -53,13 +53,28 @@ public class GameplayManager : MonoBehaviour
             } 
             UIController.Instance.UpdateTime(currentTime);
         }
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            playeLevle10();
+        }
     }
 
     private void SetState(GameState newState)
     {
         State = newState;
     }
+    public void playeLevle10()
+    {
+        SetState(GameState.Waiting);
+        _LevelEditor.ClearAll();
+        _LevelEditor.LoadLevel("Level " + 9);
+        maxTime = _LevelEditor.levelTime;
+        currentTime = maxTime;
+        UIController.Instance.UpdateViewLevel(displayLevel, currentTime);
 
+        foreach (var obj in _LevelEditor.GetBallSpawners())
+            obj.SpawnBalls();
+    }
     private void LoadLevel()
     {
         SetState(GameState.Waiting);

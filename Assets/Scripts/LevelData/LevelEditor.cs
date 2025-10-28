@@ -167,15 +167,24 @@ public class LevelEditorManager : MonoBehaviour
         {
             DestroyImmediate(obj);
             obstacleDict.Remove(index);
+
+            if (gridManager.IsValidPosition(index))
+                gridManager.SetOccupied(index, false);
         }
         else
         {
             Vector2 pos = gridManager.GetCellWorldPosition(index.x, index.y);
+
             var obstacle = Instantiate(obstaclePrefab, pos, Quaternion.identity, transform);
             obstacle.transform.SetParent(_parentObstacles);
+
             obstacleDict[index] = obstacle;
+
+            if (gridManager.IsValidPosition(index))
+                gridManager.SetOccupied(index, true);
         }
     }
+
 
     private int _totalBall = 0;
     private void ToggleSpawner(Vector2Int index, int count)
@@ -218,16 +227,11 @@ public class LevelEditorManager : MonoBehaviour
     }
     private void PlaceBlock(Vector2Int index)
     {
+        Vector2Int baseCell = index;
         var prefab = blockPrefabs.Find(b => b.Shape == currentShape);
-        if (prefab == null)
-        {
-            Debug.LogWarning($"⚠️ Không tìm thấy prefab cho shape {currentShape}");
-            return;
-        }
+        if (prefab == null) return;
 
-        Vector2 pos = gridManager.GetCellWorldPosition(index.x, index.y);
-        var newBlock = Instantiate(prefab, pos, Quaternion.identity, transform);
-        newBlock.transform.SetParent(_parentBlocks);
+        var newBlock = Instantiate(prefab, Vector3.zero, Quaternion.identity, _parentBlocks);
         newBlock.Rotation = currentRotation;
         newBlock._Color = currentColor;
         newBlock.ApplyRotation();
@@ -235,7 +239,45 @@ public class LevelEditorManager : MonoBehaviour
         int colorIndex = (int)currentColor;
         if (colorIndex >= 0 && colorIndex < _materialsColor.Length)
             newBlock.Init(currentColor, Direction.FullDirection, _materialsColor[colorIndex]);
+
+        var localCells = newBlock.GetRotatedCells();
+
+        foreach (var c in localCells)
+        {
+            Vector2Int pos = baseCell + c;
+            if (!gridManager.IsValidPosition(pos) || gridManager.IsOccupied(pos))
+            {
+                DestroyImmediate(newBlock.gameObject);
+                return;
+            }
+        }
+
+        Vector2 centroid = Vector2.zero;
+        foreach (var c in localCells)
+            centroid += gridManager.GetCellWorldPosition(baseCell.x + c.x, baseCell.y + c.y);
+        centroid /= localCells.Length;
+
+        Vector2 localCentroid = newBlock.GetLocalCentroid();
+        Vector2 pivotOffset = localCentroid * gridManager.CellSize;
+
+        Vector3 targetPos = new Vector3(
+            centroid.x - pivotOffset.x,
+            centroid.y - pivotOffset.y,
+            0f
+        );
+        newBlock.transform.position = targetPos;
+
+        foreach (var c in localCells)
+        {
+            Vector2Int pos = baseCell + c;
+            if (gridManager.IsValidPosition(pos))
+            {
+                newBlock.OccupiedInGrid.Add(pos);
+                gridManager.SetOccupied(pos, true);
+            }
+        }
     }
+
 
     private void ClearCell(Vector2Int index)
     {
@@ -369,15 +411,9 @@ public class LevelEditorManager : MonoBehaviour
     {
         _totalBall = 0;
         ballSpawners = new List<BallSpawner>();
-        string path = savePath + fileName + ".json";
-        if (!File.Exists(path))
-        {
-            Debug.LogWarning($"⚠️ File not found: {path}");
-            return;
-        }
+        TextAsset path = Resources.Load<TextAsset>("Levels/" + fileName);
 
-        string json = File.ReadAllText(path);
-        LevelData data = JsonUtility.FromJson<LevelData>(json);
+        LevelData data = JsonUtility.FromJson<LevelData>(path.text);
 
         ClearAll();
 
@@ -471,7 +507,18 @@ public class LevelEditorManager : MonoBehaviour
 
             newBlock.transform.position = targetPos;
 
+            newBlock.OccupiedInGrid.Clear();
+            foreach (var c in localCells)
+            {
+                Vector2Int pos = b.baseIndex + c;
+                if (gridManager.IsValidPosition(pos))
+                {
+                    gridManager.SetOccupied(pos, true);
+                    newBlock.OccupiedInGrid.Add(pos);
+                }
+            }
         }
+
 
         Debug.Log($"📂 Level loaded: {fileName}");
     }
